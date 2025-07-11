@@ -6,41 +6,39 @@ import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.util.Map;
+import java.util.*;
 
 @Service
 public class EmailGeneratorService {
 
     private final WebClient webClient;
-    private final String grokApiUrl;
-    private final String grokApiKey;
+    private final String geminiApiUrl;
+    private final String geminiApiKey;
 
     public EmailGeneratorService(WebClient.Builder webClientBuilder) {
         this.webClient = webClientBuilder.build();
 
-        // Load from .env
         Dotenv dotenv = Dotenv.load();
-        this.grokApiKey = dotenv.get("GROK_API_KEY");
-        this.grokApiUrl = dotenv.get("GROK_API_URL");
+        this.geminiApiKey = dotenv.get("GEMINI_API_KEY");
+        this.geminiApiUrl = dotenv.get("GEMINI_API_URL");
     }
 
     public String generateEmailReply(EmailRequest emailRequest) {
         String prompt = buildPrompt(emailRequest);
 
         Map<String, Object> requestBody = Map.of(
-                "model", "meta-llama/llama-4-scout-17b-16e-instruct",
-                "messages", new Object[]{
+                "contents", List.of(
                         Map.of(
-                                "role", "user",
-                                "content", prompt
+                                "parts", List.of(
+                                        Map.of("text", prompt)
+                                )
                         )
-                }
+                )
         );
 
         try {
             String response = webClient.post()
-                    .uri(grokApiUrl)
-                    .header("Authorization", "Bearer " + grokApiKey)
+                    .uri(geminiApiUrl + "?key=" + geminiApiKey)
                     .header("Content-Type", "application/json")
                     .bodyValue(requestBody)
                     .retrieve()
@@ -49,7 +47,7 @@ public class EmailGeneratorService {
 
             return extractResponseContent(response);
         } catch (Exception e) {
-            return "Error calling Groq API: " + e.getMessage();
+            return "Error calling Gemini API: " + e.getMessage();
         }
     }
 
@@ -57,10 +55,12 @@ public class EmailGeneratorService {
         try {
             ObjectMapper mapper = new ObjectMapper();
             JsonNode rootNode = mapper.readTree(response);
-            return rootNode.path("choices")
+            return rootNode.path("candidates")
                     .get(0)
-                    .path("message")
                     .path("content")
+                    .path("parts")
+                    .get(0)
+                    .path("text")
                     .asText();
         } catch (Exception e) {
             return "Error processing response: " + e.getMessage();
