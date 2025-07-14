@@ -4,7 +4,7 @@ An AI-powered email reply generator integrated with Gmail, built using **Spring 
 
 ---
 
-## 🚀 Features
+## Features
 
 -  Smart Email Generation via Gemini API (Google AI)
 -  React-based UI for composing or generating responses
