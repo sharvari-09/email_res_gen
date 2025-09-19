@@ -1,4 +1,4 @@
-# Email Writer Assistant
+# ReplyGenie
 
 An AI-powered email reply generator integrated with Gmail, built using **Spring Boot**, **React**, and a custom **Chrome Extension**.
 
